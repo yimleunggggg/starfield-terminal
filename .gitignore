@@ -1,0 +1,14 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+.venv/
+.env
+.env.*
+*.log
+*.bak
+*.backup*
+.idea/
+.vscode/
+# Never commit local account/private settings or secrets.
+settings.json
+starship.toml

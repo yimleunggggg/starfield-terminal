@@ -1,0 +1,196 @@
+# ✧ Starfield Terminal
+
+**A little universe for your terminal.**
+
+[![tests](https://github.com/yimleunggggg/starfield-terminal/actions/workflows/tests.yml/badge.svg)](https://github.com/yimleunggggg/starfield-terminal/actions/workflows/tests.yml)
+[![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+A random constellation illustration and a dry one-liner above your prompt every time you open a new terminal tab. Optional Claude Code statusline. Optional Starship prompt presets — chosen by you, never applied for you.
+
+[简体中文](README.zh-CN.md) · [Starship presets](docs/STARSHIP.md) · [Compatibility](#compatibility) · [Troubleshooting](#troubleshooting)
+
+![Starfield Terminal welcome screen](docs/preview.png)
+
+---
+
+## What you get
+
+Every new interactive tab prints **one** greeting picked from 12 entries, paired with **one** of 6 decorative constellation images. The greeting and the illustration are drawn independently, so the combinations rarely repeat.
+
+- **12 greetings** — a heading image or styled text, a one-liner, and an italic sign-off, each with its own emoji.
+- **6 constellation illustrations** — glow, lines and star labels, rendered as real PNGs through the Kitty graphics protocol on Ghostty.
+- **12 bold heading sprites** — displayed large on wide Ghostty windows, falling back to text elsewhere.
+- **Optional Claude Code statusline** — project, Git branch, model and context usage on two lines. One stable emoji per conversation.
+- **Optional Starship preset chooser** — a small interactive menu that applies an *official* Starship preset after backing up your existing `starship.toml`. Nothing is applied automatically.
+
+**This project only ever writes:** its own files under `~/.config/starfield-terminal/`, one marked block in your shell startup file, and — only with `--with-claude` — the `statusLine` key in `~/.claude/settings.json`. It does not touch your projects, your fonts, or your Ghostty config.
+
+---
+
+## Requirements
+
+| | |
+| --- | --- |
+| Python | 3.8 or newer (`python3 -V`) |
+| Terminal | [Ghostty](https://ghostty.org/download) for images; any terminal for text |
+| Shell | zsh or bash on macOS/Linux, PowerShell on Windows |
+
+No pip packages, no network access, no fonts bundled.
+
+---
+
+## Quick start
+
+```bash
+git clone https://github.com/yimleunggggg/starfield-terminal.git
+cd starfield-terminal
+bash scripts/install.sh
+```
+
+Then open a **new** Ghostty tab. That's it.
+
+Prefer a ZIP? Download it from the green **Code** button, unzip, and run the same command inside the folder.
+
+Add the Claude Code statusline too — this is a separate, opt-in step:
+
+```bash
+bash scripts/install.sh --with-claude
+```
+
+Restart Claude Code if the old statusline is still on screen.
+
+### See it without opening a tab
+
+```bash
+python3 ~/.config/starfield-terminal/welcome.py              # one random greeting
+python3 ~/.config/starfield-terminal/welcome.py --gallery    # all six illustrations
+python3 ~/.config/starfield-terminal/welcome.py --no-image   # text only
+python3 ~/.config/starfield-terminal/welcome.py --seed 5     # reproducible pick
+python3 ~/.config/starfield-terminal/welcome.py --version
+```
+
+---
+
+## Make it yours
+
+Everything lives in `~/.config/starfield-terminal/`.
+
+**Labels.** The statusline identity defaults to your computer's name. To override it — or the label printed above each greeting — edit `config.json`:
+
+```json
+{
+  "label": "NOVA / STUDIO",
+  "status_label": "NOVA / LAB"
+}
+```
+
+Remove `status_label` entirely to go back to the machine name. Windows and Linux have no `open -e`; use whatever editor you like.
+
+**Greeting text.** Copy `examples/welcome-library.json` to `~/.config/starfield-terminal/welcome-library.json`. Each entry is a four-item array: `[emoji, heading, body, footer]`. Invalid entries are ignored and the built-in set is used instead. Custom headings print as text rather than as sprite images.
+
+**Illustrations.** Drop replacements into `~/.config/starfield-terminal/constellations/` (`celestial-01.png` … `celestial-06.png`) and `titles/` (`title-01.png` … `title-12.png`).
+
+---
+
+## The Claude Code statusline
+
+Lines look like this:
+
+```
+🍳  NOVA / LAB  │ PROJECT  starfield-terminal  ·  GIT main
+MODEL  Claude Fable 5.1  │  CTX  42%
+```
+
+- The emoji is derived from the session id, so it stays put for a conversation.
+- `GIT` disappears when the current directory is not a Git repository.
+- Context percentages from third-party gateways are marked `~` because those window sizes are often assumed rather than reported.
+- Narrow panes drop the Git suffix first, then truncate the project name.
+
+Disable it any time with `bash scripts/uninstall.sh`, which restores your previous `statusLine` — but only if the current value still points at this project.
+
+---
+
+## Starship (optional, separate)
+
+The rainbow prompt in the original screenshots is **[Starship](https://starship.rs/)**, an independent project. Starfield Terminal does not install it, configure it, or overwrite it. If you already use Starship and want a new look:
+
+```bash
+bash scripts/starship-presets.sh --list
+bash scripts/starship-presets.sh
+```
+
+The chooser offers four [official presets](https://starship.rs/presets/), backs up an existing `~/.config/starship.toml`, and asks before writing. Choosing `0` changes nothing. Most Powerline presets need a Nerd Font, which this repository does not ship.
+
+Details and non-interactive usage: [docs/STARSHIP.md](docs/STARSHIP.md).
+
+---
+
+## Compatibility
+
+| Environment | Greeting | PNG illustrations | Claude statusline |
+| --- | --- | --- | --- |
+| macOS + Ghostty + zsh | Yes | Yes, on windows ≥ 84 columns | Optional |
+| Linux + Ghostty + bash/zsh | Expected — not verified on every distro | Expected | Optional |
+| macOS Terminal.app / iTerm2 + zsh | Text only (`--all-terminals`) | Text fallback | Optional |
+| Windows Terminal + PowerShell | Text only | Not included | Not installed |
+
+Ghostty is a different terminal from Windows Terminal. The illustrations need the Kitty graphics protocol, which Terminal.app and Windows Terminal do not implement — those environments get colored text instead, by design.
+
+```bash
+bash scripts/install.sh --all-terminals   # macOS Terminal.app / iTerm2
+bash scripts/install.sh --shell=bash      # Linux, when zsh is not your shell
+```
+
+---
+
+## Troubleshooting
+
+**A new tab shows nothing.**
+The default install only fires inside Ghostty, and only for interactive, non-SSH shells. Check `echo $TERM_PROGRAM` and `echo $GHOSTTY_RESOURCES_DIR`. Using another terminal? Re-run with `--all-terminals`.
+
+**Text appears but no image.**
+Illustrations need Ghostty *and* a window at least 84 columns wide. Widen the window, or check `--force-image`.
+
+**Claude Code still shows the old statusline.**
+Restart Claude Code. Confirm `~/.claude/settings.json` has a `statusLine` whose command points at `starfield-terminal/statusline.py`.
+
+**Emoji or box characters look misaligned.**
+That is a font issue, not a rendering one — pick a monospace font with good emoji metrics in your terminal settings.
+
+**Two greetings appear per tab.**
+You have another welcome hook in your shell startup file. Look for the `STARFIELD TERMINAL` marker block and remove any other greeting call around it.
+
+**Start over.**
+`bash scripts/uninstall.sh` removes the startup block and reverts the statusline. Your assets and backups stay in `~/.config/starfield-terminal/` for safety.
+
+---
+
+## Windows
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\install-windows.ps1
+```
+
+Text-only greeting, no illustrations, no Starship or statusline changes. Undo with `.\scripts\uninstall-windows.ps1`.
+
+---
+
+## Contributing
+
+Bug reports and pull requests are welcome — terminal compatibility fixes especially, and new constellation artwork that you have the rights to contribute.
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+
+The suite installs into temporary `HOME` directories, so it never touches your real dotfiles.
+
+Please never open an issue or PR containing your actual `~/.zshrc`, `~/.claude/settings.json`, API keys, or private Git credentials.
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE).
+
+Ghostty and Starship are independent third-party projects. Starship's presets remain hosted and maintained by Starship; this repository only provides a selector that invokes your local `starship` binary. No fonts are bundled. The illustrations are decorative — the constellation names are real, the line geometry is not an accurate sky chart.
