@@ -50,6 +50,8 @@ This will overwrite your current Starship config **after backing it up**. If you
 
 ## Windows PowerShell
 
+`scripts/starship-presets.sh` is a bash script and will not run under PowerShell. Use the manual steps below instead.
+
 Install Starship using the [official guide](https://starship.rs/guide/). For example:
 
 ```powershell
@@ -76,5 +78,5 @@ Or choose another preset name from the [official gallery](https://starship.rs/pr
 ## Important
 
 - The Starship configuration is independent from the welcome screen and from Claude Code statusline.
-- We do not ship or modify your original private `starship.toml`.
+- The installer never touches `starship.toml`. Only `scripts/starship-presets.sh`, which you run yourself, writes it — after a timestamped backup and a confirmation prompt.
 - A Starship preset will **not** look identical in every terminal: it depends on the font, background and shell prompt setup.

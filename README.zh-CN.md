@@ -23,7 +23,7 @@
 - **可选 Claude Code 双行状态栏**：项目、Git 分支、模型、上下文占用。同一会话内 emoji 固定。
 - **可选 Starship 预设选择器**：在 4 款**官方**预设里挑一个，写入前先备份你现有的 `starship.toml`。不选就不动。
 
-**本项目只会写入：** `~/.config/starfield-terminal/` 下自己的文件、shell 启动文件里一个带标记的代码块，以及仅在 `--with-claude` 时修改 `~/.claude/settings.json` 的 `statusLine` 键。不碰你的项目目录、不装字体、不改 Ghostty 配置。
+**安装器只会写入：** `~/.config/starfield-terminal/` 下自己的文件、shell 启动文件里一个带标记的代码块，以及仅在 `--with-claude` 时修改 `~/.claude/settings.json` 的 `statusLine` 键。不碰你的项目目录、不装字体、不改 Ghostty 配置。独立的 Starship 选择器还会写 `~/.config/starship.toml`，但只在你主动运行时，且写入前一定先备份。
 
 ---
 
@@ -36,6 +36,20 @@
 | Shell | macOS / Linux 用 zsh 或 bash，Windows 用 PowerShell |
 
 不需要 pip 安装任何包，不联网，不附带字体。
+
+---
+
+## 三件独立的东西
+
+同一个安装器、同一个配置目录，但你可以只取其中一部分。
+
+| 东西 | 怎么开 | 需要什么 | 会写什么 |
+| --- | --- | --- | --- |
+| **欢迎画面** | `bash scripts/install.sh` | Python 3.8+；看图需要 Ghostty | `~/.config/starfield-terminal/`，以及 `~/.zshrc` 或 `~/.bashrc` 里一个带标记的代码块 |
+| **Claude Code 状态栏** | `bash scripts/install.sh --with-claude` | Python 3.8+（这一步会顺带装好欢迎画面） | 同上，另加 `~/.claude/settings.json` 里的 `statusLine` |
+| **Starship 预设** | `bash scripts/starship-presets.sh` | Starship 已由你自行安装并初始化 | `~/.config/starship.toml`，写入前先做带时间戳的备份 |
+
+前两件是安装器的开关；第三件是独立脚本，只有你主动运行时才会动，而且 `starship` 不在 `PATH` 里它会直接退出并提示去看官方安装指南。
 
 ---
 
@@ -83,7 +97,10 @@ python3 ~/.config/starfield-terminal/welcome.py --version
 
 所有东西都在 `~/.config/starfield-terminal/` 下。
 
-**标签文字。** 状态栏左上角的身份就是你安装时输入的名字 —— 没输入则沿用电脑名称。之后想改，编辑 `config.json`：
+**标签文字。** `config.json` 里有两个互不相干的字段：
+
+- `label` —— 每组欢迎语上方那行字，默认 `STARFIELD / TERMINAL`。
+- `status_label` —— Claude Code 状态栏上的身份，来自你安装时输入的名字；没输入则用电脑名称。
 
 ```json
 {
@@ -92,9 +109,9 @@ python3 ~/.config/starfield-terminal/welcome.py --version
 }
 ```
 
-删掉 `status_label` 就回到默认的机器名。`open -e` 是 macOS 命令，Linux / Windows 请用自己习惯的编辑器。
+删掉 `status_label` 就回到默认的机器名。用任何文本编辑器打开都行 —— `open -e` 只有 macOS 有。
 
-**欢迎语文案。** 把 `examples/welcome-library.json` 复制到 `~/.config/starfield-terminal/welcome-library.json`。每一项是四元数组：`[emoji, 标题, 正文, 收尾]`。格式不对的条目会被忽略，整体退回内置文案。自定义标题以文字显示，不使用标题图片。
+**欢迎语文案。** 把 `examples/welcome-library.json` 复制到 `~/.config/starfield-terminal/welcome-library.json`。每一项是四元数组：`[emoji, 标题, 正文, 收尾]`。每一行都必须是四个字符串 —— **只要有一行格式不对，整个文件会被忽略**，退回内置的 12 组文案。自定义标题以文字显示，不使用标题图片。
 
 **插画。** 把替换文件放进 `~/.config/starfield-terminal/constellations/`（`celestial-01.png` 到 `celestial-06.png`）和 `titles/`（`title-01.png` 到 `title-12.png`）。
 
@@ -114,20 +131,20 @@ MODEL  Claude Fable 5.1  │  CTX  42%
 - 第三方网关的上下文百分比会带 `~`，因为那类窗口大小往往是估算而非真实上报。
 - 窗口变窄时先丢 Git 段，再截断项目名。
 
-随时可以用 `bash scripts/uninstall.sh` 关掉。它会还原你之前的 `statusLine` —— 但只在当前值仍然指向本项目时才还原，不会覆盖你后来的改动。
+随时可以用 `bash scripts/uninstall.sh` 关掉 —— 请在克隆下来的文件夹里运行，脚本就在仓库里。它会还原你之前的 `statusLine`，但只在当前值仍然指向本项目时才还原，不会覆盖你后来的改动。
 
 ---
 
 ## Starship（可选，独立项目）
 
-原图上那条彩虹提示符来自 **[Starship](https://starship.rs/)**，是完全独立的第三方项目。本项目不安装它、不配置它、也不会覆盖它。如果你本来就在用 Starship，想换个样子：
+原图上那条彩虹提示符来自 **[Starship](https://starship.rs/)**，是完全独立的第三方项目。本项目**不会**安装 Starship，也不会擅自改动你的提示符。下面这个可选的选择器只会在你主动运行时写入一款预设，且写入前先做带时间戳的备份并征求你确认。如果你本来就在用 Starship，想换个样子：
 
 ```bash
 bash scripts/starship-presets.sh --list
 bash scripts/starship-presets.sh
 ```
 
-选择器提供 4 款[官方预设](https://starship.rs/presets/)，写入前备份现有的 `~/.config/starship.toml`，并询问确认。输入 `0` 什么都不改。多数 Powerline 预设需要 Nerd Font，本项目不附带字体。
+选择器提供 4 款[官方预设](https://starship.rs/presets/)，写入前备份现有的 `~/.config/starship.toml`，并询问确认。输入 `0` 什么都不改；`starship` 不在 `PATH` 里时它会直接退出并提示你去看安装指南。多数 Powerline 预设需要 Nerd Font，本项目不附带字体。
 
 详细说明和非交互用法见 [docs/STARSHIP.md](docs/STARSHIP.md)。
 
@@ -168,8 +185,11 @@ bash scripts/install.sh --shell=bash      # Linux 且你的 shell 是 bash
 **每个标签页出现两份欢迎语。**
 你的 shell 启动文件里还有别的欢迎脚本。搜 `STARFIELD TERMINAL` 标记块，把周围其他的欢迎调用删掉。
 
+**更新到新版本。**
+进到克隆下来的文件夹 `git pull`，然后 `bash scripts/install.sh`；如果用状态栏就加 `--with-claude`，因为 `statusline.py` 是那一步才复制的。你的 `config.json` 和自定义的 `welcome-library.json` 都会保留。
+
 **想重来。**
-`bash scripts/uninstall.sh` 会移除启动块并还原状态栏。资源文件和备份会保留在 `~/.config/starfield-terminal/`，方便你回滚。
+`bash scripts/uninstall.sh`（在克隆下来的文件夹里运行）会移除启动块并还原状态栏。资源文件和备份会保留在 `~/.config/starfield-terminal/`，方便你回滚。
 
 ---
 

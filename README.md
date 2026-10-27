@@ -20,10 +20,10 @@ Every new interactive tab prints **one** greeting picked from 12 entries, paired
 - **12 greetings** — a heading image or styled text, a one-liner, and an italic sign-off, each with its own emoji.
 - **6 constellation illustrations** — glow, lines and star labels, rendered as real PNGs through the Kitty graphics protocol on Ghostty.
 - **12 bold heading sprites** — displayed large on wide Ghostty windows, falling back to text elsewhere.
-- **Optional Claude Code statusline** — project, Git branch, model and context usage on two lines. One stable emoji per conversation.
+- **Optional Claude Code statusline** — project, Git branch, model and context usage in two rows. One stable emoji per conversation.
 - **Optional Starship preset chooser** — a small interactive menu that applies an *official* Starship preset after backing up your existing `starship.toml`. Nothing is applied automatically.
 
-**This project only ever writes:** its own files under `~/.config/starfield-terminal/`, one marked block in your shell startup file, and — only with `--with-claude` — the `statusLine` key in `~/.claude/settings.json`. It does not touch your projects, your fonts, or your Ghostty config.
+**The installer only ever writes:** its own files under `~/.config/starfield-terminal/`, one marked block in your shell startup file, and — only with `--with-claude` — the `statusLine` key in `~/.claude/settings.json`. It does not touch your projects, your fonts, or your Ghostty config. The separate Starship chooser can also write `~/.config/starship.toml`, but only when you run it, and only after backing the file up.
 
 ---
 
@@ -36,6 +36,20 @@ Every new interactive tab prints **one** greeting picked from 12 entries, paired
 | Shell | zsh or bash on macOS/Linux, PowerShell on Windows |
 
 No pip packages, no network access, no fonts bundled.
+
+---
+
+## Three independent pieces
+
+One installer, one config folder — but take only what you want.
+
+| Piece | Turn it on | Needs | What it writes |
+| --- | --- | --- | --- |
+| **Greeting** | `bash scripts/install.sh` | Python 3.8+; Ghostty for images | `~/.config/starfield-terminal/`, one marked block in `~/.zshrc` or `~/.bashrc` |
+| **Claude Code statusline** | `bash scripts/install.sh --with-claude` | Python 3.8+ (this also installs the greeting) | the same, plus `statusLine` in `~/.claude/settings.json` |
+| **Starship preset** | `bash scripts/starship-presets.sh` | Starship already installed and initialised by you | `~/.config/starship.toml`, after a timestamped backup |
+
+The first two are steps of the installer. The third is a separate script that runs only when you call it, and it refuses to run if `starship` is not on your `PATH`.
 
 ---
 
@@ -83,7 +97,10 @@ python3 ~/.config/starfield-terminal/welcome.py --version
 
 Everything lives in `~/.config/starfield-terminal/`.
 
-**Labels.** The statusline identity is whatever you typed at install time — or your computer's name if you skipped the question. To change it later, edit `config.json`:
+**Labels.** Two separate strings live in `config.json`:
+
+- `label` — the line printed above each greeting. Defaults to `STARFIELD / TERMINAL`.
+- `status_label` — the identity in the Claude Code statusline. Set from the name you typed at install time, and falls back to your computer's name.
 
 ```json
 {
@@ -92,9 +109,9 @@ Everything lives in `~/.config/starfield-terminal/`.
 }
 ```
 
-Remove `status_label` entirely to go back to the machine name. Windows and Linux have no `open -e`; use whatever editor you like.
+Remove `status_label` entirely to go back to the machine name. Use any text editor — `open -e` only exists on macOS.
 
-**Greeting text.** Copy `examples/welcome-library.json` to `~/.config/starfield-terminal/welcome-library.json`. Each entry is a four-item array: `[emoji, heading, body, footer]`. Invalid entries are ignored and the built-in set is used instead. Custom headings print as text rather than as sprite images.
+**Greeting text.** Copy `examples/welcome-library.json` to `~/.config/starfield-terminal/welcome-library.json`. Each entry is a four-item array: `[emoji, heading, body, footer]`. Every row must be four strings — a single malformed row makes the whole file ignored, and the built-in twelve are used instead. Custom headings print as text rather than as sprite images.
 
 **Illustrations.** Drop replacements into `~/.config/starfield-terminal/constellations/` (`celestial-01.png` … `celestial-06.png`) and `titles/` (`title-01.png` … `title-12.png`).
 
@@ -114,20 +131,20 @@ MODEL  Claude Fable 5.1  │  CTX  42%
 - Context percentages from third-party gateways are marked `~` because those window sizes are often assumed rather than reported.
 - Narrow panes drop the Git suffix first, then truncate the project name.
 
-Disable it any time with `bash scripts/uninstall.sh`, which restores your previous `statusLine` — but only if the current value still points at this project.
+Disable it any time with `bash scripts/uninstall.sh` — run from the cloned folder, since the script lives in the repository. It restores your previous `statusLine`, but only if the current value still points at this project.
 
 ---
 
 ## Starship (optional, separate)
 
-The rainbow prompt in the original screenshots is **[Starship](https://starship.rs/)**, an independent project. Starfield Terminal does not install it, configure it, or overwrite it. If you already use Starship and want a new look:
+The rainbow prompt in the original screenshots is **[Starship](https://starship.rs/)**, an independent project. Starfield Terminal never installs Starship and never changes your prompt on its own. The optional chooser below writes exactly one preset, and only after backing up your `starship.toml` and asking you to confirm. If you already use Starship and want a new look:
 
 ```bash
 bash scripts/starship-presets.sh --list
 bash scripts/starship-presets.sh
 ```
 
-The chooser offers four [official presets](https://starship.rs/presets/), backs up an existing `~/.config/starship.toml`, and asks before writing. Choosing `0` changes nothing. Most Powerline presets need a Nerd Font, which this repository does not ship.
+The chooser offers four [official presets](https://starship.rs/presets/), backs up an existing `~/.config/starship.toml`, and asks before writing. Choosing `0` changes nothing, and it exits with a pointer to the install guide if `starship` is missing. Most Powerline presets need a Nerd Font, which this repository does not ship.
 
 Details and non-interactive usage: [docs/STARSHIP.md](docs/STARSHIP.md).
 
@@ -168,8 +185,11 @@ That is a font issue, not a rendering one — pick a monospace font with good em
 **Two greetings appear per tab.**
 You have another welcome hook in your shell startup file. Look for the `STARFIELD TERMINAL` marker block and remove any other greeting call around it.
 
+**Updating to a newer version.**
+`cd` into your clone, `git pull`, then `bash scripts/install.sh` — add `--with-claude` if you use the statusline, since that is the step that copies `statusline.py`. Your `config.json` and any custom `welcome-library.json` are left alone.
+
 **Start over.**
-`bash scripts/uninstall.sh` removes the startup block and reverts the statusline. Your assets and backups stay in `~/.config/starfield-terminal/` for safety.
+`bash scripts/uninstall.sh` (from the cloned folder) removes the startup block and reverts the statusline. Your assets and backups stay in `~/.config/starfield-terminal/` for safety.
 
 ---
 
