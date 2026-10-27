@@ -40,10 +40,11 @@ def shorten(s, limit):
 
 
 def machine_label():
-    """Default identity: this machine's name, upper-cased.
+    """Fallback identity when config.json has no status_label.
 
     macOS reports the friendly ComputerName from System Settings; elsewhere the
-    hostname is used, split on the first dash into the 'A / B' label style.
+    hostname without its domain is used. Returned verbatim — a machine called
+    'MacBook Pro' should read like that, not like a shouting brand.
     """
     host = ''
     if sys.platform == 'darwin':
@@ -61,11 +62,7 @@ def machine_label():
             host = socket.gethostname().split('.')[0].strip()
         except OSError:
             return 'STARFIELD'
-    if not host or host.lower().startswith('localhost'):
-        return 'STARFIELD'
-    head, _, rest = host.partition('-')
-    label = f'{head} / {rest.replace("-", " ")}' if rest else host
-    return label.upper()
+    return host or 'STARFIELD'
 
 
 try:

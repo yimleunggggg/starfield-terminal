@@ -5,12 +5,14 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MODE="ghostty"
 SHELL_KIND="$(basename "${SHELL:-zsh}")"
 CLAUDE=0
+NAME=""
 for arg in "$@"; do
   case "$arg" in
     --all-terminals) MODE=all ;;
     --with-claude) CLAUDE=1 ;;
     --shell=zsh) SHELL_KIND=zsh ;;
     --shell=bash) SHELL_KIND=bash ;;
+    --name=*) NAME="${arg#--name=}" ;;
     *) printf 'Unknown argument: %s\n' "$arg" >&2; exit 2 ;;
   esac
 done
@@ -19,7 +21,22 @@ python3 -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 8) else 1)
   || { echo 'Python 3.8 or newer is required; found:' "$(python3 -V 2>&1)" >&2; exit 1; }
 [[ "$SHELL_KIND" == zsh || "$SHELL_KIND" == bash ]] || { echo 'Supported shell startup files: zsh and bash.' >&2; exit 1; }
 [[ -d "$ROOT/assets/constellations" && -d "$ROOT/assets/titles" ]] || { echo 'Repository assets missing.' >&2; exit 1; }
-export STARFIELD_ROOT="$ROOT" STARFIELD_MODE="$MODE" STARFIELD_SHELL_KIND="$SHELL_KIND" STARFIELD_WITH_CLAUDE="$CLAUDE"
+
+# Ask what the statusline should call this machine, but only on a first,
+# interactive install. Re-runs keep whatever the user already chose.
+if [[ -z "$NAME" && -t 0 && ! -f "$HOME/.config/starfield-terminal/config.json" ]]; then
+  if [[ "$(uname -s)" == Darwin ]]; then
+    DEFAULT_NAME="$(scutil --get ComputerName 2>/dev/null || true)"
+  else
+    DEFAULT_NAME="$(hostname 2>/dev/null | sed 's/\..*$//' || true)"
+  fi
+  [[ -n "$DEFAULT_NAME" ]] || DEFAULT_NAME="STARFIELD"
+  printf 'Name for the statusline [%s]: ' "$DEFAULT_NAME" >&2
+  read -r NAME || true
+  [[ -n "$NAME" ]] || NAME="$DEFAULT_NAME"
+fi
+
+export STARFIELD_ROOT="$ROOT" STARFIELD_MODE="$MODE" STARFIELD_SHELL_KIND="$SHELL_KIND" STARFIELD_WITH_CLAUDE="$CLAUDE" STARFIELD_NAME="$NAME"
 python3 - <<'PY'
 import json, os, shutil, re
 from pathlib import Path
@@ -62,6 +79,17 @@ for folder in ('constellations','titles'):
 config = target/'config.json'
 if not config.exists():
     shutil.copy2(root/'examples/config.json',config)
+# A name given at install time wins; an existing status_label is otherwise kept.
+name = os.environ.get('STARFIELD_NAME','').strip()
+if name:
+    try:
+        data = json.loads(config.read_text(encoding='utf-8'))
+        if not isinstance(data, dict):
+            data = {}
+    except (OSError, ValueError):
+        data = {}
+    data['status_label'] = name
+    config.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
 # Replace/insert one private, distinct marker block. Do not touch other shell integrations.
 if mode == 'all':
     condition = '[[ $- == *i* ]] && [[ -z "${SSH_CONNECTION:-}" ]]'
@@ -90,6 +118,7 @@ if with_claude:
     settings['statusLine'] = {'type':'command','command':f'python3 "{statusline}"','padding':0}
     claude_settings.write_text(json.dumps(settings,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
 print('Starfield Terminal installed.')
+print('  Name: '+ (name or 'computer name (edit '+str(config)+' to change it)'))
 print('  Welcome: one random joke + one random decorative constellation per tab')
 print('  Shell startup: '+str(startup)+' ('+mode+')')
 print('  Claude statusline: '+('enabled' if with_claude else 'unchanged; run --with-claude to opt in'))

@@ -68,6 +68,17 @@ class InstallTests(unittest.TestCase):
         self.assertEqual(restored,original)
         self.assertNotIn('# >>> STARFIELD', (self.home/'.zshrc').read_text())
 
+    def test_name_flag_sets_status_label(self):
+        self.run_cmd(['bash','scripts/install.sh','--name=NOVA / LAB'])
+        cfg=json.loads((self.home/'.config/starfield-terminal/config.json').read_text())
+        self.assertEqual(cfg['status_label'],'NOVA / LAB')
+        self.assertEqual(cfg['label'],'STARFIELD / TERMINAL')
+
+    def test_non_interactive_install_leaves_name_to_machine(self):
+        self.run_cmd(['bash','scripts/install.sh'])
+        cfg=json.loads((self.home/'.config/starfield-terminal/config.json').read_text())
+        self.assertNotIn('status_label',cfg)
+
     def test_statusline_label_comes_from_config(self):
         self.run_cmd(['bash','scripts/install.sh','--with-claude'])
         cfg=self.home/'.config/starfield-terminal/config.json'

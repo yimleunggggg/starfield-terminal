@@ -49,6 +49,14 @@ bash scripts/install.sh
 
 然后**新开一个** Ghostty 标签页，就装好了。
 
+第一次在终端里安装时，脚本只会问一个问题 —— 状态栏上怎么称呼这台机器：
+
+```
+Name for the statusline [你的-MacBook-Pro]:
+```
+
+直接回车就沿用电脑名称，也可以随便输入你喜欢的名字（比如 `NOVA / LAB`、`工作室`）。不想被问，装的时候加 `--name="NOVA / LAB"` 跳过。
+
 想用 ZIP 也可以：点绿色的 **Code** 按钮下载，解压后进入文件夹运行同一条命令。
 
 如果还想要 Claude Code 状态栏，这是**另一步**，需要单独选择：
@@ -75,7 +83,7 @@ python3 ~/.config/starfield-terminal/welcome.py --version
 
 所有东西都在 `~/.config/starfield-terminal/` 下。
 
-**标签文字。** 状态栏左上角的身份默认是你的**电脑名称**。想换掉它，或者换欢迎语上方的标签，编辑 `config.json`：
+**标签文字。** 状态栏左上角的身份就是你安装时输入的名字 —— 没输入则沿用电脑名称。之后想改，编辑 `config.json`：
 
 ```json
 {

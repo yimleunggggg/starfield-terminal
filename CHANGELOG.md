@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.0.1 — Choose your own name
+
+- The installer asks one question on a first interactive install: what the
+  statusline should call this machine. Press Enter to keep the computer name, or
+  type your own. Re-running the installer never overwrites a choice you made.
+- Non-interactive installs (CI, piped scripts) skip the question; use
+  `--name="NOVA / LAB"` to set it explicitly.
+- The computer-name fallback is no longer upper-cased or split on dashes, so a
+  MacBook Pro reads `Yim的MacBook Pro` rather than `YIMDEMACBOOK / PRO`.
+
 ## v1.0.0 — Initial public release
 
 - Terminal greeting for Ghostty: twelve rotating one-liners, six decorative PNG

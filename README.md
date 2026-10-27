@@ -49,6 +49,14 @@ bash scripts/install.sh
 
 Then open a **new** Ghostty tab. That's it.
 
+On a first interactive install the script asks one question — what the statusline should call this machine:
+
+```
+Name for the statusline [Your-MacBook-Pro]:
+```
+
+Press Enter to keep your computer's name, or type anything you like. Skip the question entirely with `--name="NOVA / LAB"`.
+
 Prefer a ZIP? Download it from the green **Code** button, unzip, and run the same command inside the folder.
 
 Add the Claude Code statusline too — this is a separate, opt-in step:
@@ -75,7 +83,7 @@ python3 ~/.config/starfield-terminal/welcome.py --version
 
 Everything lives in `~/.config/starfield-terminal/`.
 
-**Labels.** The statusline identity defaults to your computer's name. To override it — or the label printed above each greeting — edit `config.json`:
+**Labels.** The statusline identity is whatever you typed at install time — or your computer's name if you skipped the question. To change it later, edit `config.json`:
 
 ```json
 {
