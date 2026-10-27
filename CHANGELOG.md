@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.1.0 — Diagnose why images are missing
+
+- `welcome.py --diagnose` prints the terminal it detected (`TERM_PROGRAM`,
+  `TERM`, `GHOSTTY_RESOURCES_DIR`), the column count, whether stdout is a
+  terminal, whether colour is enabled, how many assets are installed, and the
+  resulting verdict for constellation images and heading sprites. When a check
+  fails it names the fix. Plain text, safe to paste into an issue.
+- Troubleshooting now starts with that command instead of asking users to guess
+  between "wrong terminal" and "window too narrow".
+
 ## v1.0.4 — Per-terminal instructions
 
 No code changes. The compatibility table listed environments but never said what

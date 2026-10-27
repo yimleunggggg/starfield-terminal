@@ -88,6 +88,7 @@ python3 ~/.config/starfield-terminal/welcome.py              # 随机一条
 python3 ~/.config/starfield-terminal/welcome.py --gallery    # 六款星图全看
 python3 ~/.config/starfield-terminal/welcome.py --no-image   # 纯文字
 python3 ~/.config/starfield-terminal/welcome.py --seed 5     # 固定随机种子
+python3 ~/.config/starfield-terminal/welcome.py --diagnose   # 为什么没有图
 python3 ~/.config/starfield-terminal/welcome.py --version
 ```
 
@@ -175,11 +176,8 @@ bash scripts/starship-presets.sh
 
 ## 遇到问题
 
-**新开标签页什么都没有。**
-默认安装只在 Ghostty 里生效，且只对交互式、非 SSH 的会话生效。先看 `echo $TERM_PROGRAM` 和 `echo $GHOSTTY_RESOURCES_DIR`。用的是别的终端？加 `--all-terminals` 重装。
-
-**有文字但没有图。**
-星图需要 Ghostty，并且窗口宽度 ≥ 84 列。把窗口拉宽，或者用 `--force-image` 验证。
+**新开标签页什么都没有，或者有文字没有图。**
+先跑 `python3 ~/.config/starfield-terminal/welcome.py --diagnose`，它会打印识别到的终端、列数，以及是哪一项没通过。常见原因：默认安装只在 Ghostty 的交互式、非 SSH 会话里触发（其他终端加 `--all-terminals`），以及出图还需要窗口至少 84 列。
 
 **Claude Code 还是旧状态栏。**
 重启 Claude Code。确认 `~/.claude/settings.json` 里的 `statusLine` 指向 `starfield-terminal/statusline.py`。

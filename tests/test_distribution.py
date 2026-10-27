@@ -81,6 +81,17 @@ class InstallTests(unittest.TestCase):
         cfg=json.loads((self.home/'.config/starfield-terminal/config.json').read_text())
         self.assertNotIn('status_label',cfg)
 
+    def test_diagnose_explains_rendering(self):
+        self.run_cmd(['bash','scripts/install.sh'])
+        p=self.run_cmd([sys.executable,str(self.home/'.config/starfield-terminal/welcome.py'),'--diagnose'])
+        self.assertIn('diagnosis',p.stdout)
+        self.assertIn('width',p.stdout)
+        self.assertIn('constellation images',p.stdout)
+        self.assertIn('heading sprites',p.stdout)
+        # Piped stdout is not a terminal: the report must say so, not crash.
+        self.assertIn('stdout is a terminal',p.stdout)
+        self.assertIn('[FAIL]',p.stdout)
+
     def test_statusline_label_comes_from_config(self):
         self.run_cmd(['bash','scripts/install.sh','--with-claude'])
         cfg=self.home/'.config/starfield-terminal/config.json'

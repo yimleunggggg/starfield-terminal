@@ -88,6 +88,7 @@ python3 ~/.config/starfield-terminal/welcome.py              # one random greeti
 python3 ~/.config/starfield-terminal/welcome.py --gallery    # all six illustrations
 python3 ~/.config/starfield-terminal/welcome.py --no-image   # text only
 python3 ~/.config/starfield-terminal/welcome.py --seed 5     # reproducible pick
+python3 ~/.config/starfield-terminal/welcome.py --diagnose   # why images do or don't render
 python3 ~/.config/starfield-terminal/welcome.py --version
 ```
 
@@ -175,11 +176,8 @@ Four things worth knowing:
 
 ## Troubleshooting
 
-**A new tab shows nothing.**
-The default install only fires inside Ghostty, and only for interactive, non-SSH shells. Check `echo $TERM_PROGRAM` and `echo $GHOSTTY_RESOURCES_DIR`. Using another terminal? Re-run with `--all-terminals`.
-
-**Text appears but no image.**
-Illustrations need Ghostty *and* a window at least 84 columns wide. Widen the window, or check `--force-image`.
+**A new tab shows nothing, or shows text but no image.**
+Run `python3 ~/.config/starfield-terminal/welcome.py --diagnose` — it prints the terminal it detected, the column count, and which check failed. The usual causes: the default install only fires inside Ghostty for interactive, non-SSH shells (use `--all-terminals` elsewhere), and images also need a window at least 84 columns wide.
 
 **Claude Code still shows the old statusline.**
 Restart Claude Code. Confirm `~/.claude/settings.json` has a `statusLine` whose command points at `starfield-terminal/statusline.py`.

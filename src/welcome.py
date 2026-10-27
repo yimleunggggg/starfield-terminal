@@ -15,7 +15,7 @@ import textwrap
 from pathlib import Path
 
 HOME = Path.home()
-VERSION = '1.0.4'
+VERSION = '1.1.0'
 IMAGE_DIR = HOME / '.config' / 'starfield-terminal' / 'constellations'
 LIBRARY = HOME / '.config' / 'starfield-terminal' / 'welcome-library.json'
 TITLE_SPRITES = HOME / '.config' / 'starfield-terminal' / 'titles'
@@ -147,15 +147,82 @@ def read_settings():
         return {}
 
 
+def diagnose():
+    """Explain whether images will render and which check decides it.
+
+    Plain text with no escape sequences, so the output can be pasted into an
+    issue as-is.
+    """
+    cols = shutil.get_terminal_size(fallback=(90, 24)).columns
+    term_program = os.environ.get('TERM_PROGRAM', '')
+    term = os.environ.get('TERM', '')
+    resources = os.environ.get('GHOSTTY_RESOURCES_DIR', '')
+    tty = sys.stdout.isatty()
+    no_color = 'NO_COLOR' in os.environ
+    ghostty = kitty_supported()
+    wide = cols >= 84
+    binaries = sorted(IMAGE_DIR.glob('*.png')) if IMAGE_DIR.is_dir() else []
+    sprites = sorted(TITLE_SPRITES.glob('*.png')) if TITLE_SPRITES.is_dir() else []
+    library = LIBRARY.is_file()
+
+    def mark(ok):
+        return '[ok]  ' if ok else '[FAIL]'
+
+    print(f'Starfield Terminal {VERSION} - diagnosis')
+    print()
+    print(f'  script                 {Path(__file__).resolve()}')
+    print(f'  TERM_PROGRAM           {term_program or "<unset>"}')
+    print(f'  TERM                   {term or "<unset>"}')
+    print(f'  GHOSTTY_RESOURCES_DIR  {resources or "<unset>"}')
+    print(f'  columns                {cols}')
+    print()
+    print(f'  {mark(ghostty)}  Ghostty detected')
+    print(f'  {mark(wide)}  width {cols} (images need at least 84)')
+    print(f'  {mark(tty)}  stdout is a terminal')
+    print(f'  {mark(not no_color)}  colour enabled')
+    print(f'  {mark(len(binaries) == 6)}  constellations: {len(binaries)} of 6')
+    print(f'  {mark(len(sprites) == 12)}  title sprites: {len(sprites)} of 12')
+    print()
+
+    images = ghostty and wide and tty and len(binaries) == 6
+    headings = images and not no_color and len(sprites) == 12
+    print(f'  constellation images   {"yes" if images else "no"}')
+    print(f'  heading sprites        {"yes" if headings else "no"}')
+
+    hints = []
+    if not images:
+        if not ghostty:
+            hints.append('Images are Ghostty-only. Run inside Ghostty, or try --force-image elsewhere.')
+        if not wide:
+            hints.append(f'Widen the window to at least 84 columns (currently {cols}).')
+        if not tty:
+            hints.append('stdout is redirected; images need an interactive terminal.')
+        if len(binaries) != 6:
+            hints.append('Constellation files are missing. Re-run: bash scripts/install.sh')
+    elif not headings and no_color:
+        hints.append('NO_COLOR is set, so headings fall back to text. Images still draw.')
+    if hints:
+        print()
+        for h in hints:
+            print(f'  Hint: {h}')
+
+    print()
+    print(f'  greeting library       {"custom: " + str(LIBRARY) if library else "built-in (12 entries)"}')
+    return 0
+
+
 def main():
     parser = argparse.ArgumentParser(description='Starfield Terminal welcome')
     parser.add_argument('--version', action='version', version=f'Starfield Terminal {VERSION}')
+    parser.add_argument('--diagnose', action='store_true', help='Report whether images will render, and why not')
     parser.add_argument('--gallery', action='store_true', help='Preview all six decorative constellation illustrations')
     parser.add_argument('--seed', type=int, help='Deterministic random seed for testing')
     parser.add_argument('--no-image', action='store_true', help='Text only')
     parser.add_argument('--force-image', action='store_true', help='Test Kitty images even if terminal identification is missing')
     parser.add_argument('--columns', type=int, help='Override detected terminal width for testing')
     opts = parser.parse_args()
+    if opts.diagnose:
+        raise SystemExit(diagnose())
     cols = opts.columns or shutil.get_terminal_size(fallback=(90, 24)).columns
     rng = random.Random(opts.seed)
     item_list = entries()
