@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.0.3 — Documentation corrections
+
+No code changes. The published instructions were wrong in five places:
+
+- The Starship section claimed the project never configures Starship. The
+  optional chooser does write `~/.config/starship.toml`; the text now says so,
+  and states separately what the installer writes and what the chooser writes.
+- The three pieces — greeting, Claude Code statusline, Starship preset — now
+  have their own table with the command, the prerequisite, and the side effect
+  of each.
+- `label` and `status_label` are explained individually; only one of them used
+  to be documented.
+- A welcome library is rejected as a whole when any row is malformed, not entry
+  by entry.
+- Added update steps, noted that `uninstall.sh` runs from the cloned folder,
+  and noted that the chooser is bash-only and will not run under PowerShell.
+
 ## v1.0.2 — Restore the spacer line
 
 - The statusline prints a trailing U+2800 BRAILLE PATTERN BLANK. It renders as

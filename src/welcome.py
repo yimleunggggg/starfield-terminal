@@ -15,7 +15,7 @@ import textwrap
 from pathlib import Path
 
 HOME = Path.home()
-VERSION = '1.0.2'
+VERSION = '1.0.3'
 IMAGE_DIR = HOME / '.config' / 'starfield-terminal' / 'constellations'
 LIBRARY = HOME / '.config' / 'starfield-terminal' / 'welcome-library.json'
 TITLE_SPRITES = HOME / '.config' / 'starfield-terminal' / 'titles'
