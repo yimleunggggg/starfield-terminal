@@ -152,19 +152,24 @@ Details and non-interactive usage: [docs/STARSHIP.md](docs/STARSHIP.md).
 
 ## Compatibility
 
-| Environment | Greeting | PNG illustrations | Claude statusline |
-| --- | --- | --- | --- |
-| macOS + Ghostty + zsh | Yes | Yes, on windows ≥ 84 columns | Optional |
-| Linux + Ghostty + bash/zsh | Expected — not verified on every distro | Expected | Optional |
-| macOS Terminal.app / iTerm2 + zsh | Text only (`--all-terminals`) | Text fallback | Optional |
-| Windows Terminal + PowerShell | Text only | Not included | Not installed |
+Only Ghostty draws the images. Every other terminal works too — it just gets the text layout.
 
-Ghostty is a different terminal from Windows Terminal. The illustrations need the Kitty graphics protocol, which Terminal.app and Windows Terminal do not implement — those environments get colored text instead, by design.
+| Where | Run | What you get |
+| --- | --- | --- |
+| macOS + Ghostty (zsh) | `bash scripts/install.sh` | Greeting, images, optional statusline |
+| macOS Terminal.app / iTerm2 | `bash scripts/install.sh --all-terminals` | Greeting as text, optional statusline |
+| Linux + Ghostty + bash | `bash scripts/install.sh --shell=bash` | Greeting, images |
+| Linux, any other terminal | `bash scripts/install.sh --all-terminals` | Greeting as text |
+| VS Code / JetBrains built-in terminal (macOS, Linux) | `bash scripts/install.sh --all-terminals` | Greeting as text |
+| Windows Terminal + PowerShell | `.\scripts\install-windows.ps1` | Greeting as text; no statusline |
+| Remote shell over SSH | nothing fires — see below | — |
 
-```bash
-bash scripts/install.sh --all-terminals   # macOS Terminal.app / iTerm2
-bash scripts/install.sh --shell=bash      # Linux, when zsh is not your shell
-```
+Four things worth knowing:
+
+- **Each machine installs separately.** Nothing syncs. `config.json`, the name you picked, and any custom artwork stay on the machine where you ran the installer — repeat it on your other machines.
+- **SSH sessions are skipped in every mode.** Both the Ghostty and the `--all-terminals` hooks test for `SSH_CONNECTION`, so logging into a server never prints a greeting. Run `python3 ~/.config/starfield-terminal/welcome.py` there when you actually want one.
+- **Images need two things at once:** Ghostty, and a window at least 84 columns wide. The illustrations use the Kitty graphics protocol, which Terminal.app and Windows Terminal do not implement.
+- **tmux and screen are untested.** The greeting text prints; if the illustration goes missing, the multiplexer is the likely reason — it swallows the graphics escape.
 
 ---
 

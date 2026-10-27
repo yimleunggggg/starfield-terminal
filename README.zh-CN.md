@@ -152,19 +152,24 @@ bash scripts/starship-presets.sh
 
 ## 兼容性
 
-| 环境 | 欢迎语 | PNG 星图 | Claude 状态栏 |
-| --- | --- | --- | --- |
-| macOS + Ghostty + zsh | 支持 | 支持，窗口需 ≥ 84 列 | 可选 |
-| Linux + Ghostty + bash/zsh | 预期可用，未逐一发行版验证 | 预期可用 | 可选 |
-| macOS Terminal.app / iTerm2 + zsh | 仅文字（`--all-terminals`） | 文字回退 | 可选 |
-| Windows Terminal + PowerShell | 仅文字 | 不提供 | 不安装 |
+只有 Ghostty 会画图。其他终端也都能用，只是走文字排版。
 
-Ghostty 和 Windows Terminal 是两个不同的终端。星图依赖 Kitty 图形协议，Terminal.app 和 Windows Terminal 没有实现它，所以在这些环境里会显示彩色文字 —— 这是设计行为，不是故障。
+| 设备 / 终端 | 运行 | 效果 |
+| --- | --- | --- |
+| macOS + Ghostty（zsh） | `bash scripts/install.sh` | 欢迎语、星图、可选状态栏 |
+| macOS Terminal.app / iTerm2 | `bash scripts/install.sh --all-terminals` | 文字版欢迎语、可选状态栏 |
+| Linux + Ghostty + bash | `bash scripts/install.sh --shell=bash` | 欢迎语、星图 |
+| Linux 其他终端 | `bash scripts/install.sh --all-terminals` | 文字版欢迎语 |
+| VS Code / JetBrains 内置终端（macOS、Linux） | `bash scripts/install.sh --all-terminals` | 文字版欢迎语 |
+| Windows Terminal + PowerShell | `.\scripts\install-windows.ps1` | 文字版欢迎语，无状态栏 |
+| 通过 SSH 登录的远程机器 | 不会触发，见下 | — |
 
-```bash
-bash scripts/install.sh --all-terminals   # macOS Terminal.app / iTerm2
-bash scripts/install.sh --shell=bash      # Linux 且你的 shell 是 bash
-```
+四个要点：
+
+- **每台机器各装一次。** 没有任何同步。`config.json`、你取的名字、自定义素材都只留在安装时那台机器上，换设备要重跑一次。
+- **所有模式都会跳过 SSH 会话。** Ghostty 模式和 `--all-terminals` 都检查 `SSH_CONNECTION`，所以登录服务器永远不会弹出欢迎语。真想要就在那边手动运行 `python3 ~/.config/starfield-terminal/welcome.py`。
+- **出图要两个条件同时满足**：Ghostty，且窗口宽度 ≥ 84 列。星图用的是 Kitty 图形协议，Terminal.app 和 Windows Terminal 都没有实现。
+- **tmux / screen 尚未测试。** 文字会正常打印；如果图没了，多半是复用器吞掉了图形转义序列。
 
 ---
 
