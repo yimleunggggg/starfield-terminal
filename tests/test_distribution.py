@@ -58,8 +58,10 @@ class InstallTests(unittest.TestCase):
                  'model':{'id':'ccs-openrouter','display_name':'poolside/laguna-s-2.1:free（OpenRouter）'},
                  'context_window':{'used_percentage':18}}
         proc=self.run_cmd([sys.executable,str(self.home/'.config/starfield-terminal/statusline.py')],expected=0)
-        # An empty stdin must fail safe as well, still two lines.
-        self.assertEqual(len(proc.stdout.strip().splitlines()),2)
+        # An empty stdin must fail safe: two content lines plus the spacer.
+        lines=proc.stdout.splitlines()
+        self.assertEqual(len(lines),3)
+        self.assertEqual(lines[2],'⠀')
         status=subprocess.run([sys.executable,str(self.home/'.config/starfield-terminal/statusline.py')],
                  input=json.dumps(payload),text=True,env=self.env,capture_output=True,check=True)
         self.assertIn('~18%',status.stdout)

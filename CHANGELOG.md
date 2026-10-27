@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.0.2 — Restore the spacer line
+
+- The statusline prints a trailing U+2800 BRAILLE PATTERN BLANK. It renders as
+  nothing but is not whitespace, so the host keeps the blank line between the
+  statusline and its own indicators instead of trimming it.
+
 ## v1.0.1 — Choose your own name
 
 - The installer asks one question on a first interactive install: what the

@@ -141,3 +141,6 @@ line2 = (f'{MUTED}MODEL{RESET}  {WHITE}{model}{RESET}'
 
 print(line1)
 print(line2)
+# U+2800 BRAILLE PATTERN BLANK renders as nothing but is not whitespace, so the
+# host keeps this spacer line instead of trimming it away.
+print('⠀')
