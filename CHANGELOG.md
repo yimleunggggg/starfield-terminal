@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.0.4 — Per-terminal instructions
+
+No code changes. The compatibility table listed environments but never said what
+a user on those environments should run.
+
+- One table, one row per environment, each with the exact command: Ghostty,
+  Terminal.app / iTerm2, Linux with bash, other Linux terminals, IDE terminals,
+  Windows, and SSH.
+- Four rules that were missing: installs are per machine with nothing synced;
+  SSH sessions are skipped in every mode; images need Ghostty *and* an 84-column
+  window; tmux and screen are untested.
+
 ## v1.0.3 — Documentation corrections
 
 No code changes. The published instructions were wrong in five places:
