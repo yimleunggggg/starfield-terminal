@@ -28,6 +28,72 @@ class InstallTests(unittest.TestCase):
         self.assertEqual(p.returncode, expected, p.stdout + '\n' + p.stderr)
         return p
 
+    def fake_claude(self, extra=()):
+        """A stand-in binary carrying an embedded verb table."""
+        words = (['Baking', 'Cooking', 'Brewing', 'Smooshing', 'Razzle-dazzling',
+                  'Tinkering'] + ['Filler%02d' % i for i in range(54)] + list(extra))
+        stub = self.home/'fake-bin'/'claude'
+        stub.parent.mkdir(exist_ok=True)
+        # Same shape as the real bundle: a flat array next to the anchor word.
+        stub.write_text('#!/bin/sh\nexec /bin/true\n/*' + json.dumps(words) + '*/\n')
+        stub.chmod(0o755)
+        return stub, words
+
+    def test_spinner_install_keeps_other_settings_and_backs_up(self):
+        settings = self.home/'.claude/settings.json'
+        settings.parent.mkdir()
+        settings.write_text(json.dumps({'model': 'some-model', 'theme': 'dark'}))
+        stub, words = self.fake_claude()
+        self.run_cmd([sys.executable, 'scripts/claude-spinner.py', '--claude', str(stub)])
+        applied = json.loads(settings.read_text())
+        self.assertEqual(applied['model'], 'some-model')
+        self.assertEqual(applied['theme'], 'dark')
+        self.assertEqual(applied['spinnerVerbs']['mode'], 'replace')
+        verbs = applied['spinnerVerbs']['verbs']
+        self.assertIn('🥐 Baking', verbs)
+        self.assertIn('🫠 Smooshing', verbs)
+        self.assertIn('🎩 Conjuring', verbs)  # our extra, not a native word
+        self.assertEqual(len(verbs), len(words)+6)
+        backups = list((self.home/'.config/starfield-terminal/backups').glob('spinner-*'))
+        self.assertEqual(len(backups), 1)
+        self.assertTrue((backups[0]/'claude-settings.json').is_file())
+
+    def test_spinner_check_reports_new_native_verbs(self):
+        stub, words = self.fake_claude()
+        self.run_cmd([sys.executable, 'scripts/claude-spinner.py', '--claude', str(stub)])
+        self.run_cmd([sys.executable, 'scripts/claude-spinner.py', '--claude', str(stub), '--check'])
+        stub, words = self.fake_claude(extra=['Zigzagging'])
+        p = self.run_cmd([sys.executable, 'scripts/claude-spinner.py', '--claude', str(stub), '--check'], expected=1)
+        self.assertIn('Zigzagging', p.stdout)
+        # Re-running picks the new word up without touching anything else.
+        self.run_cmd([sys.executable, 'scripts/claude-spinner.py', '--claude', str(stub)])
+        applied = json.loads((self.home/'.claude/settings.json').read_text())
+        self.assertIn('🦓 Zigzagging', applied['spinnerVerbs']['verbs'])
+
+    def test_spinner_remove_restores_previous_value(self):
+        settings = self.home/'.claude/settings.json'
+        settings.parent.mkdir()
+        original = {'model': 'some-model',
+                    'spinnerVerbs': {'mode': 'append', 'verbs': ['Mine']}}
+        settings.write_text(json.dumps(original))
+        stub, _ = self.fake_claude()
+        self.run_cmd([sys.executable, 'scripts/claude-spinner.py', '--claude', str(stub)])
+        self.run_cmd([sys.executable, 'scripts/claude-spinner.py', '--remove'])
+        self.assertEqual(json.loads(settings.read_text()), original)
+        self.assertFalse((self.home/'.config/starfield-terminal/spinner-install-state.json').exists())
+
+    def test_installer_with_spinner_and_uninstall(self):
+        stub, words = self.fake_claude()
+        env = {'PATH': str(stub.parent)+os.pathsep+os.environ['PATH']}
+        self.run_cmd(['bash', 'scripts/install.sh', '--with-spinner'], extra_env=env)
+        applied = json.loads((self.home/'.claude/settings.json').read_text())
+        self.assertEqual(applied['spinnerVerbs']['mode'], 'replace')
+        self.assertEqual(len(applied['spinnerVerbs']['verbs']), len(words)+6)
+        self.assertTrue((self.home/'.config/starfield-terminal/claude-spinner.py').is_file())
+        self.run_cmd(['bash', 'scripts/uninstall.sh'])
+        restored = json.loads((self.home/'.claude/settings.json').read_text())
+        self.assertNotIn('spinnerVerbs', restored)
+
     def test_default_install_and_reinstall_one_hook(self):
         self.run_cmd(['bash', 'scripts/install.sh'])
         self.run_cmd(['bash', 'scripts/install.sh'])

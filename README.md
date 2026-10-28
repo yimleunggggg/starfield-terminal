@@ -21,9 +21,10 @@ Every new interactive tab prints **one** greeting picked from 12 entries, paired
 - **6 constellation illustrations** — glow, lines and star labels, rendered as real PNGs through the Kitty graphics protocol on Ghostty.
 - **12 bold heading sprites** — displayed large on wide Ghostty windows, falling back to text elsewhere.
 - **Optional Claude Code statusline** — project, Git branch, model and context usage in two rows. One stable emoji per conversation.
+- **Optional playful spinner** — every spinner verb built into your Claude Code, each with its own emoji, plus a few extras. Rebuilt from the binary you actually installed.
 - **Optional Starship preset chooser** — a small interactive menu that applies an *official* Starship preset after backing up your existing `starship.toml`. Nothing is applied automatically.
 
-**The installer only ever writes:** its own files under `~/.config/starfield-terminal/`, one marked block in your shell startup file, and — only with `--with-claude` — the `statusLine` key in `~/.claude/settings.json`. It does not touch your projects, your fonts, or your Ghostty config. The separate Starship chooser can also write `~/.config/starship.toml`, but only when you run it, and only after backing the file up.
+**The installer only ever writes:** its own files under `~/.config/starfield-terminal/`, one marked block in your shell startup file, and — only with `--with-claude` — the `statusLine` key, or — only with `--with-spinner` — the `spinnerVerbs` key in `~/.claude/settings.json`. It does not touch your projects, your fonts, or your Ghostty config. The separate Starship chooser can also write `~/.config/starship.toml`, but only when you run it, and only after backing the file up.
 
 ---
 
@@ -39,7 +40,7 @@ No pip packages, no network access, no fonts bundled.
 
 ---
 
-## Three independent pieces
+## Four independent pieces
 
 One installer, one config folder — but take only what you want.
 
@@ -47,9 +48,10 @@ One installer, one config folder — but take only what you want.
 | --- | --- | --- | --- |
 | **Greeting** | `bash scripts/install.sh` | Python 3.8+; Ghostty for images | `~/.config/starfield-terminal/`, one marked block in `~/.zshrc` or `~/.bashrc` |
 | **Claude Code statusline** | `bash scripts/install.sh --with-claude` | Python 3.8+ (this also installs the greeting) | the same, plus `statusLine` in `~/.claude/settings.json` |
+| **Playful spinner** | `bash scripts/install.sh --with-spinner` | Claude Code CLI; Python 3.8+ | the same, plus `spinnerVerbs` in `~/.claude/settings.json`, after a timestamped backup |
 | **Starship preset** | `bash scripts/starship-presets.sh` | Starship already installed and initialised by you | `~/.config/starship.toml`, after a timestamped backup |
 
-The first two are steps of the installer. The third is a separate script that runs only when you call it, and it refuses to run if `starship` is not on your `PATH`.
+The first three are steps of the installer. The fourth is a separate script that runs only when you call it, and it refuses to run if `starship` is not on your `PATH`.
 
 ---
 
@@ -80,6 +82,12 @@ bash scripts/install.sh --with-claude
 ```
 
 Restart Claude Code if the old statusline is still on screen.
+
+Want emoji in Claude Code's spinner too? Same installer, another opt-in step:
+
+```bash
+bash scripts/install.sh --with-spinner
+```
 
 ### See it without opening a tab
 
@@ -136,6 +144,33 @@ Disable it any time with `bash scripts/uninstall.sh` — run from the cloned fol
 
 ---
 
+## Playful spinner (optional, separate)
+
+Claude Code's working indicator picks a verb at random — `Baking`, `Cooking`, `Smooshing`, `Razzle-dazzling`. This option gives every verb built into your Claude Code its own emoji:
+
+```
+✳ 🥐 Baking…
+```
+
+```bash
+bash scripts/install.sh --with-spinner
+```
+
+It reads the verb table out of the Claude Code you have installed (187 verbs in 2.1.x), adds an emoji to each, and keeps a handful of extras. Only `spinnerVerbs` in `~/.claude/settings.json` is changed; everything else in that file is preserved, and the old settings are copied to `~/.config/starfield-terminal/backups/` first.
+
+**Why it uses `replace`, not `append`.** Claude Code's `append` mode joins your verbs onto the built-in list unchanged, so built-in words can never get an emoji. `replace` is the only mode where every verb shows an emoji — which also means the list is a snapshot. The script rebuilds it from your installed binary on every run, so after a Claude Code upgrade:
+
+```bash
+python3 ~/.config/starfield-terminal/claude-spinner.py --check   # says what is missing
+python3 ~/.config/starfield-terminal/claude-spinner.py           # rebuilds the list
+```
+
+Remove it with `python3 ~/.config/starfield-terminal/claude-spinner.py --remove` or `bash scripts/uninstall.sh`; both restore whatever `spinnerVerbs` value was there before, and leave it alone if you have changed it since. `--dry-run` prints the configuration without writing, `--list` prints the native verbs found on this machine, and `--claude PATH` points at a non-standard install.
+
+Works wherever the Claude Code CLI runs — macOS, Linux, Windows, any terminal — and does not need Ghostty, Starship, or the greeting. It is configured per machine, not synced. Your terminal font has to render emoji; if it does not, you will see boxes.
+
+---
+
 ## Starship (optional, separate)
 
 The rainbow prompt in the original screenshots is **[Starship](https://starship.rs/)**, an independent project. Starfield Terminal never installs Starship and never changes your prompt on its own. The optional chooser below writes exactly one preset, and only after backing up your `starship.toml` and asking you to confirm. If you already use Starship and want a new look:
@@ -189,7 +224,7 @@ That is a font issue, not a rendering one — pick a monospace font with good em
 You have another welcome hook in your shell startup file. Look for the `STARFIELD TERMINAL` marker block and remove any other greeting call around it.
 
 **Updating to a newer version.**
-`cd` into your clone, `git pull`, then `bash scripts/install.sh` — add `--with-claude` if you use the statusline, since that is the step that copies `statusline.py`. Your `config.json` and any custom `welcome-library.json` are left alone.
+`cd` into your clone, `git pull`, then `bash scripts/install.sh` — add `--with-claude` if you use the statusline and `--with-spinner` if you use the playful spinner, since each flag is the step that copies its own script. Your `config.json` and any custom `welcome-library.json` are left alone.
 
 **Start over.**
 `bash scripts/uninstall.sh` (from the cloned folder) removes the startup block and reverts the statusline. Your assets and backups stay in `~/.config/starfield-terminal/` for safety.

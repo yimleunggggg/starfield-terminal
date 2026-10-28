@@ -21,9 +21,10 @@
 - **6 款星图插画**：星点、连线、星座名，在 Ghostty 上通过 Kitty 图形协议以真实 PNG 显示。
 - **12 张加粗标题图**：Ghostty 宽窗口下显示大号标题，窄窗口和其他终端自动退回文字。
 - **可选 Claude Code 双行状态栏**：项目、Git 分支、模型、上下文占用。同一会话内 emoji 固定。
+- **可选趣味加载状态**：Claude Code 内置的每个加载动词都配一个 emoji，另加几个彩蛋词。词库从你实际安装的 Claude Code 里读取。
 - **可选 Starship 预设选择器**：在 4 款**官方**预设里挑一个，写入前先备份你现有的 `starship.toml`。不选就不动。
 
-**安装器只会写入：** `~/.config/starfield-terminal/` 下自己的文件、shell 启动文件里一个带标记的代码块，以及仅在 `--with-claude` 时修改 `~/.claude/settings.json` 的 `statusLine` 键。不碰你的项目目录、不装字体、不改 Ghostty 配置。独立的 Starship 选择器还会写 `~/.config/starship.toml`，但只在你主动运行时，且写入前一定先备份。
+**安装器只会写入：** `~/.config/starfield-terminal/` 下自己的文件、shell 启动文件里一个带标记的代码块，以及仅在 `--with-claude` 时修改 `~/.claude/settings.json` 的 `statusLine` 键、仅在 `--with-spinner` 时修改同一文件的 `spinnerVerbs` 键。不碰你的项目目录、不装字体、不改 Ghostty 配置。独立的 Starship 选择器还会写 `~/.config/starship.toml`，但只在你主动运行时，且写入前一定先备份。
 
 ---
 
@@ -39,7 +40,7 @@
 
 ---
 
-## 三件独立的东西
+## 四件独立的东西
 
 同一个安装器、同一个配置目录，但你可以只取其中一部分。
 
@@ -47,9 +48,10 @@
 | --- | --- | --- | --- |
 | **欢迎画面** | `bash scripts/install.sh` | Python 3.8+；看图需要 Ghostty | `~/.config/starfield-terminal/`，以及 `~/.zshrc` 或 `~/.bashrc` 里一个带标记的代码块 |
 | **Claude Code 状态栏** | `bash scripts/install.sh --with-claude` | Python 3.8+（这一步会顺带装好欢迎画面） | 同上，另加 `~/.claude/settings.json` 里的 `statusLine` |
+| **趣味加载状态** | `bash scripts/install.sh --with-spinner` | Claude Code CLI；Python 3.8+ | 同上，另加 `~/.claude/settings.json` 里的 `spinnerVerbs`，写入前先做带时间戳的备份 |
 | **Starship 预设** | `bash scripts/starship-presets.sh` | Starship 已由你自行安装并初始化 | `~/.config/starship.toml`，写入前先做带时间戳的备份 |
 
-前两件是安装器的开关；第三件是独立脚本，只有你主动运行时才会动，而且 `starship` 不在 `PATH` 里它会直接退出并提示去看官方安装指南。
+前三件是安装器的开关；第四件是独立脚本，只有你主动运行时才会动，而且 `starship` 不在 `PATH` 里它会直接退出并提示去看官方安装指南。
 
 ---
 
@@ -80,6 +82,12 @@ bash scripts/install.sh --with-claude
 ```
 
 如果状态栏没变，重启 Claude Code。
+
+还想让 Claude Code 的等待动词带上 emoji？同一个安装器，另一个开关：
+
+```bash
+bash scripts/install.sh --with-spinner
+```
 
 ### 不开标签页也能看效果
 
@@ -136,6 +144,33 @@ MODEL  Claude Fable 5.1  │  CTX  42%
 
 ---
 
+## 趣味加载状态（可选，独立）
+
+Claude Code 等待时会随机显示一个动词：`Baking`、`Cooking`、`Smooshing`、`Razzle-dazzling`……这一项给内置的每个动词配一个 emoji：
+
+```
+✳ 🥐 Baking…
+```
+
+```bash
+bash scripts/install.sh --with-spinner
+```
+
+脚本从你已安装的 Claude Code 里读出动词表（2.1.x 是 187 个），逐个配 emoji，再补几个额外词。只改 `~/.claude/settings.json` 的 `spinnerVerbs`，文件里的其他设置原样保留；改动前会把旧设置备份到 `~/.config/starfield-terminal/backups/`。
+
+**为什么用 `replace` 而不是 `append`。** Claude Code 的 `append` 模式只是把你的词拼到内置词库后面，内置词本身不会带上 emoji；只有 `replace` 能让每个动词都带 emoji，代价是列表变成一份快照。脚本每次运行都会重新读取已安装的二进制，所以 Claude Code 升级后：
+
+```bash
+python3 ~/.config/starfield-terminal/claude-spinner.py --check   # 看少了哪些新词
+python3 ~/.config/starfield-terminal/claude-spinner.py           # 重新生成
+```
+
+用 `python3 ~/.config/starfield-terminal/claude-spinner.py --remove` 或 `bash scripts/uninstall.sh` 撤销；两者都只会还原安装前的 `spinnerVerbs`，如果你之后自己改过就保持不动。`--dry-run` 只打印配置不写入，`--list` 列出本机读到的原生词，`--claude PATH` 用于非标准安装路径。
+
+只要跑的是 Claude Code CLI 就能用：macOS、Linux、Windows、任意终端，不依赖 Ghostty、Starship 或欢迎画面。每台机器单独配置，不会同步。终端字体需要能显示 emoji，否则会看到方块。
+
+---
+
 ## Starship（可选，独立项目）
 
 原图上那条彩虹提示符来自 **[Starship](https://starship.rs/)**，是完全独立的第三方项目。本项目**不会**安装 Starship，也不会擅自改动你的提示符。下面这个可选的选择器只会在你主动运行时写入一款预设，且写入前先做带时间戳的备份并征求你确认。如果你本来就在用 Starship，想换个样子：
@@ -189,7 +224,7 @@ bash scripts/starship-presets.sh
 你的 shell 启动文件里还有别的欢迎脚本。搜 `STARFIELD TERMINAL` 标记块，把周围其他的欢迎调用删掉。
 
 **更新到新版本。**
-进到克隆下来的文件夹 `git pull`，然后 `bash scripts/install.sh`；如果用状态栏就加 `--with-claude`，因为 `statusline.py` 是那一步才复制的。你的 `config.json` 和自定义的 `welcome-library.json` 都会保留。
+进到克隆下来的文件夹 `git pull`，然后 `bash scripts/install.sh`；如果用状态栏就加 `--with-claude`，如果用趣味加载状态就加 `--with-spinner`，这两个脚本分别由对应的开关复制。你的 `config.json` 和自定义的 `welcome-library.json` 都会保留。
 
 **想重来。**
 `bash scripts/uninstall.sh`（在克隆下来的文件夹里运行）会移除启动块并还原状态栏。资源文件和备份会保留在 `~/.config/starfield-terminal/`，方便你回滚。

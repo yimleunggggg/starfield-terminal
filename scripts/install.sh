@@ -5,11 +5,13 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MODE="ghostty"
 SHELL_KIND="$(basename "${SHELL:-zsh}")"
 CLAUDE=0
+SPINNER=0
 NAME=""
 for arg in "$@"; do
   case "$arg" in
     --all-terminals) MODE=all ;;
     --with-claude) CLAUDE=1 ;;
+    --with-spinner) SPINNER=1 ;;
     --shell=zsh) SHELL_KIND=zsh ;;
     --shell=bash) SHELL_KIND=bash ;;
     --name=*) NAME="${arg#--name=}" ;;
@@ -36,7 +38,7 @@ if [[ -z "$NAME" && -t 0 && ! -f "$HOME/.config/starfield-terminal/config.json" 
   [[ -n "$NAME" ]] || NAME="$DEFAULT_NAME"
 fi
 
-export STARFIELD_ROOT="$ROOT" STARFIELD_MODE="$MODE" STARFIELD_SHELL_KIND="$SHELL_KIND" STARFIELD_WITH_CLAUDE="$CLAUDE" STARFIELD_NAME="$NAME"
+export STARFIELD_ROOT="$ROOT" STARFIELD_MODE="$MODE" STARFIELD_SHELL_KIND="$SHELL_KIND" STARFIELD_WITH_CLAUDE="$CLAUDE" STARFIELD_WITH_SPINNER="$SPINNER" STARFIELD_NAME="$NAME"
 python3 - <<'PY'
 import json, os, shutil, re
 from pathlib import Path
@@ -52,6 +54,7 @@ marker_a = '# >>> STARFIELD TERMINAL >>>'
 marker_b = '# <<< STARFIELD TERMINAL <<<' 
 mode = os.environ['STARFIELD_MODE']
 with_claude = os.environ['STARFIELD_WITH_CLAUDE'] == '1'
+with_spinner = os.environ['STARFIELD_WITH_SPINNER'] == '1'
 # Read the existing startup file; it is rewritten only after the checks below pass.
 old = startup.read_text(encoding='utf-8') if startup.exists() else ''
 # Parse and validate settings before changing anything.
@@ -117,13 +120,19 @@ if with_claude:
             'old_statusline':settings.get('statusLine')},ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     settings['statusLine'] = {'type':'command','command':f'python3 "{statusline}"','padding':0}
     claude_settings.write_text(json.dumps(settings,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+if with_spinner:
+    shutil.copy2(root/'scripts/claude-spinner.py',target/'claude-spinner.py')
 print('Starfield Terminal installed.')
 print('  Name: '+ (name or 'computer name (edit '+str(config)+' to change it)'))
 print('  Welcome: one random joke + one random decorative constellation per tab')
 print('  Shell startup: '+str(startup)+' ('+mode+')')
 print('  Claude statusline: '+('enabled' if with_claude else 'unchanged; run --with-claude to opt in'))
+print('  Playful spinner: '+('enabled below' if with_spinner else 'unchanged; run --with-spinner to opt in'))
 print('  Starship: untouched; run scripts/starship-presets.sh --list to explore presets')
 print('  Customization: '+str(config))
 print('  Backup: '+str(backup))
 print('  Preview: python3 ~/.config/starfield-terminal/welcome.py')
 PY
+if [[ "$SPINNER" == 1 ]]; then
+  python3 "$HOME/.config/starfield-terminal/claude-spinner.py" --install
+fi

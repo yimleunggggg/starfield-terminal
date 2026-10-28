@@ -1,5 +1,27 @@
 # Changelog
 
+## v1.2.0 — Playful spinner
+
+Claude Code's working indicator picks from ~190 built-in verbs (Baking, Cooking,
+Smooshing, Razzle-dazzling…). This release adds an optional component that gives
+every one of them an emoji.
+
+- New `scripts/claude-spinner.py`, installed to
+  `~/.config/starfield-terminal/claude-spinner.py` with `--with-spinner`. It
+  reads the verb table out of the Claude Code binary you actually have
+  installed, pairs every verb with an emoji, and writes `spinnerVerbs` in
+  `~/.claude/settings.json` after backing the file up.
+- It uses `replace` mode, because `append` joins the built-in verbs unchanged
+  and they can never carry an emoji. The list is rebuilt from the installed
+  binary on every run, so verbs added by a Claude Code upgrade appear after
+  `--check` / a re-run.
+- `--check` reports drift, `--remove` restores the previous value, `--dry-run`
+  prints without writing, `--list` prints the native verbs, `--claude PATH`
+  handles non-standard installs.
+- `uninstall.sh` restores `spinnerVerbs` only if it still matches what this
+  project wrote.
+- Also keeps six extras that are not in Claude Code's own list.
+
 ## v1.1.0 — Diagnose why images are missing
 
 - `welcome.py --diagnose` prints the terminal it detected (`TERM_PROGRAM`,
