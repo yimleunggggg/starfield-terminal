@@ -1,6 +1,7 @@
 """Integration tests run with temporary HOME; never modify real shell profiles."""
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -44,7 +45,8 @@ class InstallTests(unittest.TestCase):
         settings.parent.mkdir()
         settings.write_text(json.dumps({'model': 'some-model', 'theme': 'dark'}))
         stub, words = self.fake_claude()
-        self.run_cmd([sys.executable, 'scripts/claude-spinner.py', '--claude', str(stub)])
+        p = self.run_cmd([sys.executable, 'scripts/claude-spinner.py', '--claude', str(stub)])
+        self.assertIn('native verbs read from', p.stdout)
         applied = json.loads(settings.read_text())
         self.assertEqual(applied['model'], 'some-model')
         self.assertEqual(applied['theme'], 'dark')
@@ -57,6 +59,36 @@ class InstallTests(unittest.TestCase):
         backups = list((self.home/'.config/starfield-terminal/backups').glob('spinner-*'))
         self.assertEqual(len(backups), 1)
         self.assertTrue((backups[0]/'claude-settings.json').is_file())
+
+    def test_spinner_says_when_it_fell_back_to_the_snapshot(self):
+        stub = self.home/'only-a-wrapper'/'claude'
+        stub.parent.mkdir()
+        # A shim with no verb table and no sibling binary to fall back to.
+        stub.write_text('#!/bin/sh\nexec /bin/true\n')
+        stub.chmod(0o755)
+        p = self.run_cmd([sys.executable, 'scripts/claude-spinner.py', '--claude', str(stub)])
+        self.assertIn('bundled snapshot', p.stdout)
+        self.assertIn('could not be inspected', p.stdout)
+        applied = json.loads((self.home/'.claude/settings.json').read_text())
+        self.assertEqual(len(applied['spinnerVerbs']['verbs']), len(self.fallback_verbs())+6)
+
+    def fallback_verbs(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            'claude_spinner', ROOT/'scripts/claude-spinner.py')
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module.FALLBACK_VERBS
+
+    def test_extracts_verbs_from_real_claude_when_installed(self):
+        claude = shutil.which('claude')
+        if not claude:
+            self.skipTest('Claude Code is not installed')
+        p = self.run_cmd([sys.executable, 'scripts/claude-spinner.py', '--dry-run',
+                          '--claude', claude])
+        data = json.loads(p.stdout)
+        self.assertEqual(data['spinnerVerbs']['mode'], 'replace')
+        self.assertGreater(len(data['spinnerVerbs']['verbs']), 100)
 
     def test_spinner_check_reports_new_native_verbs(self):
         stub, words = self.fake_claude()

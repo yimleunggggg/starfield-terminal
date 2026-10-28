@@ -18,6 +18,12 @@ every one of them an emoji.
 - `--check` reports drift, `--remove` restores the previous value, `--dry-run`
   prints without writing, `--list` prints the native verbs, `--claude PATH`
   handles non-standard installs.
+- The installer says where the list came from: `187 native verbs read from
+  Claude Code 2.1.312 (…)`, or `bundled snapshot … could not be inspected`.
+  The second form means the binary could not be read and the emoji list is the
+  built-in snapshot, not that version's own table.
+- Windows PowerShell installer gains `-WithSpinner`, and
+  `uninstall-windows.ps1` restores the previous `spinnerVerbs`.
 - `uninstall.sh` restores `spinnerVerbs` only if it still matches what this
   project wrote.
 - Also keeps six extras that are not in Claude Code's own list.

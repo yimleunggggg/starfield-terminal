@@ -13,6 +13,7 @@ import mmap
 import os
 import re
 import shutil
+import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -158,6 +159,48 @@ def find_claude(explicit=None):
     return Path(os.path.realpath(path))
 
 
+def candidate_binaries(found):
+    """Real binaries to try, in order. npm and native installs differ by OS."""
+    seen, out = set(), []
+
+    def add(candidate):
+        if not candidate:
+            return
+        candidate = Path(candidate)
+        try:
+            key = candidate.resolve()
+        except OSError:
+            key = candidate
+        if key in seen or not candidate.is_file():
+            return
+        seen.add(key)
+        out.append(candidate)
+
+    add(found)
+    add(Path(os.path.realpath(found)))
+    for folder in (found.parent, Path(os.path.realpath(found)).parent):
+        add(folder/'claude.exe')
+        add(folder/'claude')
+        add(folder.parent/'bin'/'claude.exe')
+        add(folder.parent/'bin'/'claude')
+
+    home = Path.home()
+    add(home/'.local'/'bin'/'claude.exe')
+    add(home/'.local'/'bin'/'claude')
+    if os.name == 'nt':
+        for base in (os.environ.get('APPDATA'), os.environ.get('LOCALAPPDATA'),
+                     os.environ.get('USERPROFILE')):
+            if not base:
+                continue
+            root = Path(base)
+            add(root/'npm'/'node_modules'/'@anthropic-ai'/'claude-code'/'bin'/'claude.exe')
+            add(root/'npm'/'node_modules'/'@anthropic-ai'/'claude-code-win32-x64'/'claude.exe')
+            add(root/'npm'/'node_modules'/'@anthropic-ai'/'claude-code-win32-arm64'/'claude.exe')
+            add(root/'Programs'/'claude'/'claude.exe')
+        add(home/'.local'/'bin'/'claude.exe')
+    return out
+
+
 def extract_verbs(binary):
     """Return the built-in verb list embedded in a Claude Code binary."""
     try:
@@ -179,6 +222,37 @@ def extract_verbs(binary):
     if len(words) < 50 or any(len(w) > 40 for w in words):
         return None
     return words
+
+
+def claude_version(binary):
+    try:
+        done = subprocess.run([str(binary), '--version'], capture_output=True,
+                              text=True, timeout=5)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    lines = (done.stdout or done.stderr).strip().splitlines()
+    if not lines:
+        return None
+    match = re.search(r'\d+\.\d+\.\d+', lines[0])
+    return match.group(0) if match else None
+
+
+def inspect(found):
+    """Return (binary, native verbs or None, version or None)."""
+    for candidate in candidate_binaries(found):
+        native = extract_verbs(candidate)
+        if native:
+            return candidate, native, claude_version(candidate)
+    return found, None, None
+
+
+def describe_source(binary, native, version):
+    if native is not None:
+        label = f'Claude Code {version}' if version else 'Claude Code'
+        return (f'{len(native)} native verbs read from {label} '
+                f'({binary})')
+    return (f'bundled snapshot of {len(FALLBACK_VERBS)} verbs; {binary} could '
+            'not be inspected, so a newer built-in list may be missing')
 
 
 def emoji_for(word):
@@ -222,16 +296,16 @@ def backup(settings):
     return folder
 
 
-def cmd_install(binary, dry_run):
-    native = extract_verbs(binary)
-    source = 'installed Claude Code'
+def cmd_install(found, dry_run):
+    binary, native, version = inspect(found)
+    source = describe_source(binary, native, version)
     if native is None:
         native = list(FALLBACK_VERBS)
-        source = 'bundled snapshot (binary layout not recognised)'
     verbs = build_verbs(native)
     payload = {'mode': 'replace', 'verbs': verbs}
     if dry_run:
         print(json.dumps({'spinnerVerbs': payload}, ensure_ascii=False, indent=2))
+        print(f'# Source: {source}', file=sys.stderr)
         return 0
 
     path = settings_path()
@@ -258,37 +332,40 @@ def cmd_install(binary, dry_run):
     state['written'] = payload
     state['claude'] = str(binary)
     state['verb_count'] = len(verbs)
+    state['native_count'] = len(native)
+    state['source'] = source
     state_file.parent.mkdir(parents=True, exist_ok=True)
     state_file.write_text(json.dumps(state, ensure_ascii=False, indent=2) + '\n',
                           encoding='utf-8')
 
-    print(f'Playful spinner enabled: {len(verbs)} verbs from the {source}.')
+    print(f'Playful spinner enabled: {len(verbs)} verbs.')
+    print(f'  Source: {source}')
     print(f'  Settings: {path}')
     print(f'  Backup:   {folder}')
     print('  Restart Claude Code to see it.')
     return 0
 
 
-def cmd_check(binary):
+def cmd_check(found):
     path = settings_path()
     settings = load_json(path, {})
     current = settings.get('spinnerVerbs') if isinstance(settings, dict) else None
     if not isinstance(current, dict) or current.get('mode') != 'replace':
         print('Playful spinner is not enabled (spinnerVerbs is not replace).')
         return 1
-    native = extract_verbs(binary)
-    source = 'installed Claude Code'
+    binary, native, version = inspect(found)
+    source = describe_source(binary, native, version)
     if native is None:
         native = list(FALLBACK_VERBS)
-        source = 'bundled snapshot'
     configured = []
     for verb in current.get('verbs', []):
         word = verb.split(' ', 1)[1] if ' ' in verb else verb
         configured.append(word)
     missing = [w for w in native if w not in configured]
     extra = [w for w in configured if w not in native and w not in {e[1] for e in EXTRAS}]
+    print(f'Source: {source}')
     if not missing and not extra:
-        print(f'Up to date with the {source}: {len(native)} native verbs.')
+        print(f'Up to date: {len(native)} native verbs.')
         return 0
     if missing:
         print(f'{len(missing)} new native verb(s) not in your spinner: '
@@ -344,15 +421,16 @@ def main():
     args = parser.parse_args()
 
     if args.list:
-        native = extract_verbs(find_claude(args.claude)) or FALLBACK_VERBS
-        print('\n'.join(native))
+        binary, native, version = inspect(find_claude(args.claude))
+        print('# ' + describe_source(binary, native, version), file=sys.stderr)
+        print('\n'.join(native if native is not None else FALLBACK_VERBS))
         return 0
     if args.remove:
         return cmd_remove()
-    binary = find_claude(args.claude)
+    found = find_claude(args.claude)
     if args.check:
-        return cmd_check(binary)
-    return cmd_install(binary, args.dry_run)
+        return cmd_check(found)
+    return cmd_install(found, args.dry_run)
 
 
 if __name__ == '__main__':

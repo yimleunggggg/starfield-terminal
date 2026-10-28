@@ -48,7 +48,7 @@
 | --- | --- | --- | --- |
 | **欢迎画面** | `bash scripts/install.sh` | Python 3.8+；看图需要 Ghostty | `~/.config/starfield-terminal/`，以及 `~/.zshrc` 或 `~/.bashrc` 里一个带标记的代码块 |
 | **Claude Code 状态栏** | `bash scripts/install.sh --with-claude` | Python 3.8+（这一步会顺带装好欢迎画面） | 同上，另加 `~/.claude/settings.json` 里的 `statusLine` |
-| **趣味加载状态** | `bash scripts/install.sh --with-spinner` | Claude Code CLI；Python 3.8+ | 同上，另加 `~/.claude/settings.json` 里的 `spinnerVerbs`，写入前先做带时间戳的备份 |
+| **趣味加载状态** | `bash scripts/install.sh --with-spinner` | Claude Code CLI；Python 3.8+（这一步会顺带装好欢迎画面） | 同上，另加 `~/.claude/settings.json` 里的 `spinnerVerbs`，写入前先做带时间戳的备份 |
 | **Starship 预设** | `bash scripts/starship-presets.sh` | Starship 已由你自行安装并初始化 | `~/.config/starship.toml`，写入前先做带时间戳的备份 |
 
 前三件是安装器的开关；第四件是独立脚本，只有你主动运行时才会动，而且 `starship` 不在 `PATH` 里它会直接退出并提示去看官方安装指南。
@@ -156,7 +156,18 @@ Claude Code 等待时会随机显示一个动词：`Baking`、`Cooking`、`Smoos
 bash scripts/install.sh --with-spinner
 ```
 
+作为安装器开关，这一步也会顺带安装或更新欢迎画面，和 `--with-claude` 的行为一致；只想要 spinner 的话，单独运行 `python3 scripts/claude-spinner.py`。
+
 脚本从你已安装的 Claude Code 里读出动词表（2.1.x 是 187 个），逐个配 emoji，再补几个额外词。只改 `~/.claude/settings.json` 的 `spinnerVerbs`，文件里的其他设置原样保留；改动前会把旧设置备份到 `~/.config/starfield-terminal/backups/`。
+
+安装器会明确告诉你词表从哪来，只会是下面两种之一：
+
+```
+Source: 187 native verbs read from Claude Code 2.1.312 (/path/to/claude)
+Source: bundled snapshot of 187 verbs; /path/to/claude could not be inspected, so a newer built-in list may be missing
+```
+
+第二行表示没能读取你的 Claude Code（少见的安装布局，或某些 Windows shim）。spinner 仍能用，但用的是内置快照，不是你那个版本自己的词表。遇到这种情况，用 `--claude PATH` 指向真实的 `claude.exe`。
 
 **为什么用 `replace` 而不是 `append`。** Claude Code 的 `append` 模式只是把你的词拼到内置词库后面，内置词本身不会带上 emoji；只有 `replace` 能让每个动词都带 emoji，代价是列表变成一份快照。脚本每次运行都会重新读取已安装的二进制，所以 Claude Code 升级后：
 
@@ -237,7 +248,13 @@ bash scripts/starship-presets.sh
 powershell -ExecutionPolicy Bypass -File .\scripts\install-windows.ps1
 ```
 
-只有文字欢迎语，不装星图，不改 Starship 和状态栏。卸载用 `.\scripts\uninstall-windows.ps1`。
+只有文字欢迎语，不装星图，不改 Starship 和状态栏。加 `-WithSpinner` 可以同时给 Claude Code 的加载动词配上 emoji：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\install-windows.ps1 -WithSpinner
+```
+
+spinner 是纯 Python 脚本，Windows 上同样可用。如果读不到 `claude.exe`（有些 npm shim 指向的是包装脚本而不是真实二进制），它会打印 `bundled snapshot … could not be inspected`，用 `--claude PATH` 指向真实二进制即可。卸载用 `.\scripts\uninstall-windows.ps1`，它也会还原之前的 `spinnerVerbs`。
 
 ---
 

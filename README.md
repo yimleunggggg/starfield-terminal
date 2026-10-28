@@ -48,7 +48,7 @@ One installer, one config folder — but take only what you want.
 | --- | --- | --- | --- |
 | **Greeting** | `bash scripts/install.sh` | Python 3.8+; Ghostty for images | `~/.config/starfield-terminal/`, one marked block in `~/.zshrc` or `~/.bashrc` |
 | **Claude Code statusline** | `bash scripts/install.sh --with-claude` | Python 3.8+ (this also installs the greeting) | the same, plus `statusLine` in `~/.claude/settings.json` |
-| **Playful spinner** | `bash scripts/install.sh --with-spinner` | Claude Code CLI; Python 3.8+ | the same, plus `spinnerVerbs` in `~/.claude/settings.json`, after a timestamped backup |
+| **Playful spinner** | `bash scripts/install.sh --with-spinner` | Claude Code CLI; Python 3.8+ (this also installs the greeting) | the same, plus `spinnerVerbs` in `~/.claude/settings.json`, after a timestamped backup |
 | **Starship preset** | `bash scripts/starship-presets.sh` | Starship already installed and initialised by you | `~/.config/starship.toml`, after a timestamped backup |
 
 The first three are steps of the installer. The fourth is a separate script that runs only when you call it, and it refuses to run if `starship` is not on your `PATH`.
@@ -156,7 +156,18 @@ Claude Code's working indicator picks a verb at random — `Baking`, `Cooking`, 
 bash scripts/install.sh --with-spinner
 ```
 
+As an installer switch, this also installs or updates the greeting — the same behaviour as `--with-claude`. Run `python3 scripts/claude-spinner.py` on its own if you want only the spinner.
+
 It reads the verb table out of the Claude Code you have installed (187 verbs in 2.1.x), adds an emoji to each, and keeps a handful of extras. Only `spinnerVerbs` in `~/.claude/settings.json` is changed; everything else in that file is preserved, and the old settings are copied to `~/.config/starfield-terminal/backups/` first.
+
+The installer prints where the list came from. One of these two lines:
+
+```
+Source: 187 native verbs read from Claude Code 2.1.312 (/path/to/claude)
+Source: bundled snapshot of 187 verbs; /path/to/claude could not be inspected, so a newer built-in list may be missing
+```
+
+The second line means your Claude Code install could not be read (unusual layouts, some Windows shims). The spinner still works, but it uses the built-in snapshot rather than that version's own list. If you see it, pass `--claude PATH` with the real `claude.exe`.
 
 **Why it uses `replace`, not `append`.** Claude Code's `append` mode joins your verbs onto the built-in list unchanged, so built-in words can never get an emoji. `replace` is the only mode where every verb shows an emoji — which also means the list is a snapshot. The script rebuilds it from your installed binary on every run, so after a Claude Code upgrade:
 
@@ -237,7 +248,13 @@ You have another welcome hook in your shell startup file. Look for the `STARFIEL
 powershell -ExecutionPolicy Bypass -File .\scripts\install-windows.ps1
 ```
 
-Text-only greeting, no illustrations, no Starship or statusline changes. Undo with `.\scripts\uninstall-windows.ps1`.
+Text-only greeting, no illustrations, no Starship or statusline changes. Add `-WithSpinner` to give Claude Code's spinner its emoji too:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\install-windows.ps1 -WithSpinner
+```
+
+The spinner is a plain Python script and works on Windows. If it cannot read `claude.exe` (some npm shims point at a wrapper rather than the binary), it prints `bundled snapshot … could not be inspected`; point it at the real binary with `--claude PATH`. Undo with `.\scripts\uninstall-windows.ps1`, which also restores the previous `spinnerVerbs`.
 
 ---
 
